@@ -1,0 +1,42 @@
+
+<workflow-app xmlns='uri:oozie:workflow:0.3' name='ctl_tbls_workflow'>
+<start to='invoke_shell' />
+
+<action name="invoke_shell">
+<shell xmlns="uri:oozie:shell-action:0.1">
+<job-tracker>${jobTracker}</job-tracker>
+<name-node>${nameNode}</name-node>
+<configuration>
+<property>
+<name>mapred.job.queue.name</name>
+<value>${queueName}</value>
+</property>
+<property>
+<name>oozie.launcher.mapred.job.queue.name</name>
+<value>${adhocQueue}</value>
+</property>
+</configuration>
+<exec>${nameNode}/cleanup.sh</exec>
+<file>${nameNode}/cleanup.sh#${nameNode}/cleanup.sh</file>
+<capture-output />
+</shell>
+
+<ok to="takeaction"/>
+<error to="fail"/>
+</action>
+
+<decision name="takeaction">
+<switch>
+<case to="fail">
+${(wf:actionData('invoke_shell')['executed_with_error'] == true)}
+</case>
+<default to="end"/>
+</switch>
+</decision>
+
+<kill name="fail">
+<message>shell execution failed, error message[${wf:errorMessage(wf:lastErrorNode())}]</message>
+</kill>
+
+<end name='end' />
+</workflow-app>
