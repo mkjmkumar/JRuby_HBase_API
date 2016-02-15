@@ -1,0 +1,45 @@
+import org.apache.hadoop.hbase.HBaseConfiguration
+import org.apache.hadoop.hbase.client.HTable
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Result;
+import java.util.ArrayList;
+
+def purge_Q()
+#Below are the date variable, 7days means 60 * 60 * 24 * 7
+today =  Time.now.strftime("%Y%m%d").to_i
+Q_data_before_date = (Time.now - (60 * 60 * 24 * 140)).strftime("%Y%m%d").to_i
+puts "Cleanup run date: #{today}"
+puts "Cleanup Qhour data before: #{Q_data_before_date}"
+
+var_table = "tclc004"
+
+htable = HTable.new(HBaseConfiguration.new, var_table)
+rs = htable.getScanner(Bytes.toBytes("d"), Bytes.toBytes("Date_Key"))
+output = ArrayList.new
+#output.add "ROW\t\t\t\t\t\tCOLUMN\+CELL"
+rs.each { |r|
+r.raw.each { |kv|
+row = Bytes.toString(kv.getRow)
+fam = Bytes.toString(kv.getFamily)
+ql = Bytes.toString(kv.getQualifier)
+ts = kv.getTimestamp
+val = Bytes.toInt(kv.getValue)
+if val <= Q_data_before_date
+ #output.add "#{val} #{row} "
+ #deleteall var_table, row
+ #else
+ #output.add "#{val} #{row}"
+end
+}
+}
+output.each {|line| puts "#{line}\n"}
+end
+
+
+
+puts "Now call to to QHourly purge script"
+purge_Q
+
+exit
